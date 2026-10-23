@@ -196,6 +196,9 @@ export const resources = sqliteTable(
         stickySession: integer("stickySession", { mode: "boolean" })
             .notNull()
             .default(false),
+        bindSessionToIp: integer("bindSessionToIp", { mode: "boolean" })
+            .notNull()
+            .default(false),
         loadBalancingStrategy: text("loadBalancingStrategy")
             .$type<"wrr" | "p2c" | "hrw" | "leasttime">()
             .notNull()
@@ -1392,6 +1395,7 @@ export const resourceSessions = sqliteTable("resourceSessions", {
         .notNull()
         .default(false),
     isRequestToken: integer("isRequestToken", { mode: "boolean" }),
+    ip: text("ip"),
     userSessionId: text("userSessionId").references(() => sessions.sessionId, {
         onDelete: "cascade"
     }),

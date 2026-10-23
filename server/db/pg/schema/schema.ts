@@ -180,6 +180,7 @@ export const resources = pgTable(
         applyRules: boolean("applyRules"),
         enabled: boolean("enabled").notNull().default(true),
         stickySession: boolean("stickySession").notNull().default(false),
+        bindSessionToIp: boolean("bindSessionToIp").notNull().default(false),
         loadBalancingStrategy: varchar("loadBalancingStrategy", { length: 32 })
             .$type<"wrr" | "p2c" | "hrw" | "leasttime">()
             .notNull()
@@ -1112,6 +1113,7 @@ export const resourceSessions = pgTable("resourceSessions", {
     sessionLength: bigint("sessionLength", { mode: "number" }).notNull(),
     doNotExtend: boolean("doNotExtend").notNull().default(false),
     isRequestToken: boolean("isRequestToken"),
+    ip: varchar("ip"),
     userSessionId: varchar("userSessionId").references(
         () => sessions.sessionId,
         {

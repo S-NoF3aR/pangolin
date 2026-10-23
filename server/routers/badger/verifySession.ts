@@ -1,9 +1,13 @@
 import {
     createResourceSession,
+    invalidateResourceSession,
     serializeResourceSessionCookie,
     validateResourceSessionToken
 } from "@server/auth/sessions/resource";
-import { generateSessionToken } from "@server/auth/sessions/app";
+import {
+    generateSessionToken,
+    invalidateSession
+} from "@server/auth/sessions/app";
 import { verifyResourceAccessToken } from "@server/auth/verifyResourceAccessToken";
 import {
     extractVirtualApiKeyCredential,
@@ -760,6 +764,28 @@ export async function verifyResourceSession(
                 );
 
                 return notAllowed(res);
+            }
+
+            if (
+                resourceSession &&
+                resource.bindSessionToIp &&
+                resourceSession.ip &&
+                clientIp &&
+                resourceSession.ip !== clientIp
+            ) {
+                // end the whole login, the user session cookie may be stolen too
+                logger.warn(
+                    `Resource session used from a different IP, ending login. Resource ID: ${
+                        resource.resourceId
+                    }. Issued to: ${resourceSession.ip}. Used from: ${clientIp}.`
+                );
+                localCache.del(sessionCacheKey);
+                if (resourceSession.userSessionId) {
+                    await invalidateSession(resourceSession.userSessionId);
+                } else {
+                    await invalidateResourceSession(resourceSession.sessionId);
+                }
+                return notAllowed(res, redirectPath, resource.orgId);
             }
 
             if (resourceSession) {

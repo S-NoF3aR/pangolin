@@ -128,6 +128,7 @@ function ProxyResourceHttpForm({
                 }
             ),
         forwardIdentityHeaders: z.boolean(),
+        bindSessionToIp: z.boolean(),
         requestHeaders: z
             .array(z.object({ name: z.string(), value: z.string() }))
             .nullable(),
@@ -145,6 +146,7 @@ function ProxyResourceHttpForm({
             tlsServerName: resource.tlsServerName || "",
             setHostHeader: resource.setHostHeader || "",
             forwardIdentityHeaders: resource.forwardIdentityHeaders,
+            bindSessionToIp: resource.bindSessionToIp,
             requestHeaders: resource.requestHeaders,
             responseHeaders: resource.responseHeaders
         },
@@ -187,6 +189,7 @@ function ProxyResourceHttpForm({
                     tlsServerName: data.tlsServerName || null,
                     setHostHeader: data.setHostHeader || null,
                     forwardIdentityHeaders: data.forwardIdentityHeaders,
+                    bindSessionToIp: data.bindSessionToIp,
                     requestHeaders: data.requestHeaders || null,
                     responseHeaders: data.responseHeaders || null
                 }
@@ -211,6 +214,7 @@ function ProxyResourceHttpForm({
                 tlsServerName: data.tlsServerName || null,
                 setHostHeader: data.setHostHeader || null,
                 forwardIdentityHeaders: data.forwardIdentityHeaders,
+                bindSessionToIp: data.bindSessionToIp,
                 requestHeaders: data.requestHeaders || null,
                 responseHeaders: data.responseHeaders || null
             });
@@ -398,6 +402,32 @@ function ProxyResourceHttpForm({
                                                         )}
                                                         description={t(
                                                             "proxyForwardIdentityHeadersDescription"
+                                                        )}
+                                                        checked={field.value}
+                                                        onCheckedChange={
+                                                            field.onChange
+                                                        }
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                </SettingsFormCell>
+
+                                <SettingsFormCell span="full">
+                                    <FormField
+                                        control={form.control}
+                                        name="bindSessionToIp"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <SwitchInput
+                                                        id="bind-session-to-ip-toggle"
+                                                        label={t(
+                                                            "proxyBindSessionToIp"
+                                                        )}
+                                                        description={t(
+                                                            "proxyBindSessionToIpDescription"
                                                         )}
                                                         checked={field.value}
                                                         onCheckedChange={

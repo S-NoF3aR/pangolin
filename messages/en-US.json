@@ -835,6 +835,8 @@
     "proxyAdditionalDescription": "Configure how the resource handles proxy settings",
     "proxyForwardIdentityHeaders": "Forward Identity Headers",
     "proxyForwardIdentityHeadersDescription": "Send the authenticated user's identity to the backend in the Remote-User, Remote-Email, Remote-Name, Remote-Role, and Remote-User-Id headers. Disable for backends that reject requests with unrecognized headers.",
+    "proxyBindSessionToIp": "Bind Session to Client IP",
+    "proxyBindSessionToIpDescription": "End the user's login when a session cookie for this resource is used from a different IP address than the one it was issued to, and require a new login. Protects against stolen session cookies, but users whose IP changes (mobile networks, switching Wi-Fi, VPN, IPv4/IPv6) have to log in again.",
     "proxyCustomHeader": "Custom Host Header",
     "proxyCustomHeaderDescription": "The host header to set when proxying requests. Leave empty to use the default.",
     "proxyAdditionalSubmit": "Save Proxy Settings",

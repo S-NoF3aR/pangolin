@@ -102,6 +102,12 @@ const updateHttpResourceBodySchema = z
             .describe(
                 "How requests are distributed across targets: wrr (weighted round robin, default), p2c (power of two choices), hrw (highest random weight / client IP hashing), leasttime (lowest response time)."
             ),
+        bindSessionToIp: z
+            .boolean()
+            .optional()
+            .describe(
+                "End the user's login when a session cookie for this resource is used from a different client IP than the one it was issued to."
+            ),
         tlsServerName: z.string().nullable().optional(),
         setHostHeader: z.string().nullable().optional(),
         forwardIdentityHeaders: z
