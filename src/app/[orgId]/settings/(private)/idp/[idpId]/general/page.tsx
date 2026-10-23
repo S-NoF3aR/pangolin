@@ -373,7 +373,7 @@ export default function GeneralPage() {
                     identifierPath: "email",
                     emailPath: "email",
                     namePath: "name",
-                    scopes: "openid profile email"
+                    scopes: "openid profile email offline_access"
                 };
             } else if (variant === "google") {
                 // Google uses predefined URLs

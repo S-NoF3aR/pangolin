@@ -4,6 +4,7 @@ import {
     validateResourceSessionToken
 } from "@server/auth/sessions/resource";
 import { generateSessionToken } from "@server/auth/sessions/app";
+import { revalidateIdpSession } from "@server/auth/sessions/idpRevalidation";
 import { verifyResourceAccessToken } from "@server/auth/verifyResourceAccessToken";
 import {
     extractVirtualApiKeyCredential,
@@ -1491,6 +1492,10 @@ async function isUserAllowedToAccessResource(
     resource: Resource,
     org: Org
 ): Promise<BasicUserData | null> {
+    if (!(await revalidateIdpSession(userSessionId))) {
+        return null;
+    }
+
     const result = await getUserSessionWithUser(userSessionId);
 
     if (!result) {

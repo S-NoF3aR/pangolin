@@ -33,7 +33,10 @@ export function applyOidcIdpProviderType<T extends FieldValues>(
         setValue("identifierPath" as never, "email" as never);
         setValue("emailPath" as never, "email" as never);
         setValue("namePath" as never, "name" as never);
-        setValue("scopes" as never, "openid profile email" as never);
+        setValue(
+            "scopes" as never,
+            "openid profile email offline_access" as never
+        );
         setValue("tenantId" as never, "" as never);
     } else {
         setValue("authUrl" as never, "" as never);
