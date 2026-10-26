@@ -48,8 +48,6 @@ jobs:
     if: github.repository_owner == 'fosrl'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      REGISTRY_AUTH_FILE: ${{ runner.temp }}/containers/auth.json
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,6 +65,10 @@ jobs:
           DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
         run: |
           set -euo pipefail
+          # runner.temp isn't available in job-level env, so export it here
+          # for this and later steps.
+          export REGISTRY_AUTH_FILE="${RUNNER_TEMP}/containers/auth.json"
+          echo "REGISTRY_AUTH_FILE=${REGISTRY_AUTH_FILE}" >> "$GITHUB_ENV"
           mkdir -p "$(dirname "$REGISTRY_AUTH_FILE")"
           echo "$GHCR_TOKEN" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
           # Authenticated Docker Hub pulls avoid the shared-IP anonymous limit.
