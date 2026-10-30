@@ -46,8 +46,11 @@ import { AxiosResponse } from "axios";
 import { ListRolesResponse } from "@server/routers/role";
 import AutoProvisionConfigWidget from "@app/components/AutoProvisionConfigWidget";
 import IdpAutoProvisionUsersDescription from "@app/components/IdpAutoProvisionUsersDescription";
+import IdpSessionRevalidationDescription from "@app/components/IdpSessionRevalidationDescription";
 import IdpIdentifierChangeDialog from "@app/components/IdpIdentifierChangeDialog";
 import { PaidFeaturesAlert } from "@app/components/PaidFeaturesAlert";
+import { SwitchInput } from "@app/components/SwitchInput";
+import { ensureOfflineAccessScope } from "@app/lib/idp/ensureOfflineAccessScope";
 import { tierMatrix } from "@server/lib/billing/tierMatrix";
 import {
     compileRoleMappingExpression,
@@ -105,6 +108,7 @@ export default function GeneralPage() {
         namePath: z.string().nullable().optional(),
         scopes: z.string().min(1, { message: t("idpScopeRequired") }),
         autoProvision: z.boolean().default(false),
+        sessionRevalidation: z.boolean().default(false),
         orgMapping: z.string().optional()
     });
 
@@ -118,6 +122,7 @@ export default function GeneralPage() {
         roleMapping: z.string().nullable().optional(),
         roleId: z.number().nullable().optional(),
         autoProvision: z.boolean().default(false),
+        sessionRevalidation: z.boolean().default(false),
         orgMapping: z.string().optional()
     });
 
@@ -132,6 +137,7 @@ export default function GeneralPage() {
         roleMapping: z.string().nullable().optional(),
         roleId: z.number().nullable().optional(),
         autoProvision: z.boolean().default(false),
+        sessionRevalidation: z.boolean().default(false),
         orgMapping: z.string().optional()
     });
 
@@ -164,8 +170,9 @@ export default function GeneralPage() {
             identifierPath: "sub",
             emailPath: "email",
             namePath: "name",
-            scopes: "openid profile email offline_access",
+            scopes: "openid profile email",
             autoProvision: true,
+            sessionRevalidation: false,
             roleMapping: null,
             roleId: null,
             tenantId: "",
@@ -218,6 +225,8 @@ export default function GeneralPage() {
                         clientId: data.idpOidcConfig.clientId,
                         clientSecret: data.idpOidcConfig.clientSecret,
                         autoProvision: data.idp.autoProvision,
+                        sessionRevalidation:
+                            data.idp.sessionRevalidation ?? false,
                         roleMapping: roleMapping || null,
                         roleId: null,
                         orgMapping: data.idpOrg?.orgMapping ?? ""
@@ -343,6 +352,7 @@ export default function GeneralPage() {
                 clientId: data.clientId,
                 clientSecret: data.clientSecret,
                 autoProvision: data.autoProvision,
+                sessionRevalidation: data.sessionRevalidation,
                 roleMapping: roleMappingExpression,
                 orgMapping: orgMappingTrimmed === "" ? null : orgMappingTrimmed
             };
@@ -350,6 +360,10 @@ export default function GeneralPage() {
             // Add variant-specific fields
             if (variant === "oidc") {
                 const oidcData = data as OidcFormValues;
+                let scopes = oidcData.scopes;
+                if (data.sessionRevalidation) {
+                    scopes = ensureOfflineAccessScope(scopes);
+                }
                 payload = {
                     ...payload,
                     authUrl: oidcData.authUrl,
@@ -357,13 +371,17 @@ export default function GeneralPage() {
                     identifierPath: oidcData.identifierPath,
                     emailPath: oidcData.emailPath || "",
                     namePath: oidcData.namePath || "",
-                    scopes: oidcData.scopes
+                    scopes
                 };
             } else if (variant === "azure") {
                 const azureData = data as AzureFormValues;
                 // Construct URLs dynamically for Azure provider
                 const authUrl = `https://login.microsoftonline.com/${azureData.tenantId}/oauth2/v2.0/authorize`;
                 const tokenUrl = `https://login.microsoftonline.com/${azureData.tenantId}/oauth2/v2.0/token`;
+                let scopes = "openid profile email";
+                if (data.sessionRevalidation) {
+                    scopes = ensureOfflineAccessScope(scopes);
+                }
                 payload = {
                     ...payload,
                     authUrl: authUrl,
@@ -371,10 +389,14 @@ export default function GeneralPage() {
                     identifierPath: "email",
                     emailPath: "email",
                     namePath: "name",
-                    scopes: "openid profile email offline_access"
+                    scopes
                 };
             } else if (variant === "google") {
                 // Google uses predefined URLs
+                let scopes = "openid profile email";
+                if (data.sessionRevalidation) {
+                    scopes = ensureOfflineAccessScope(scopes);
+                }
                 payload = {
                     ...payload,
                     authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
@@ -382,7 +404,7 @@ export default function GeneralPage() {
                     identifierPath: "email",
                     emailPath: "email",
                     namePath: "name",
-                    scopes: "openid profile email"
+                    scopes
                 };
             }
 
@@ -524,6 +546,40 @@ export default function GeneralPage() {
                                             </FormItem>
                                         )}
                                     />
+                                    <div className="space-y-2">
+                                        <SwitchInput
+                                            id="session-revalidation-toggle"
+                                            label={t("idpSessionRevalidation")}
+                                            checked={form.watch(
+                                                "sessionRevalidation"
+                                            )}
+                                            onCheckedChange={(checked) => {
+                                                form.setValue(
+                                                    "sessionRevalidation",
+                                                    checked
+                                                );
+                                                if (
+                                                    checked &&
+                                                    variant === "oidc"
+                                                ) {
+                                                    const current =
+                                                        form.getValues(
+                                                            "scopes"
+                                                        ) ||
+                                                        "openid profile email";
+                                                    form.setValue(
+                                                        "scopes",
+                                                        ensureOfflineAccessScope(
+                                                            current
+                                                        )
+                                                    );
+                                                }
+                                            }}
+                                        />
+                                        <FormDescription>
+                                            <IdpSessionRevalidationDescription />
+                                        </FormDescription>
+                                    </div>
                                 </form>
                             </Form>
                         </SettingsSectionForm>
@@ -531,7 +587,11 @@ export default function GeneralPage() {
                 </SettingsSection>
 
                 {/* Auto Provision Settings */}
-                <SettingsSection>
+                <SettingsSection
+                    className={
+                        form.watch("autoProvision") ? undefined : "min-h-0"
+                    }
+                >
                     <SettingsSectionHeader>
                         <SettingsSectionTitle>
                             {t("idpAutoProvisionUsers")}

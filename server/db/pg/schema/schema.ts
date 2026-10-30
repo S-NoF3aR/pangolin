@@ -1300,6 +1300,7 @@ export const idp = pgTable("idp", {
     defaultRoleMapping: varchar("defaultRoleMapping"),
     defaultOrgMapping: varchar("defaultOrgMapping"),
     autoProvision: boolean("autoProvision").notNull().default(false),
+    sessionRevalidation: boolean("sessionRevalidation").notNull().default(false),
     tags: text("tags")
 });
 

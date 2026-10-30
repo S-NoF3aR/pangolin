@@ -1616,6 +1616,11 @@ export const idp = sqliteTable("idp", {
     })
         .notNull()
         .default(false),
+    sessionRevalidation: integer("sessionRevalidation", {
+        mode: "boolean"
+    })
+        .notNull()
+        .default(false),
     tags: text("tags")
 });
 

@@ -860,7 +860,9 @@ export async function verifyResourceSession(
                         res,
                         forwardedUserData(
                             resource,
-                            whitelistEmail ? { email: whitelistEmail } : undefined
+                            whitelistEmail
+                                ? { email: whitelistEmail }
+                                : undefined
                         ),
                         dontStripSession
                     );

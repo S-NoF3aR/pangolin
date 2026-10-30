@@ -1,5 +1,6 @@
 import {
     db,
+    idp,
     idpGrants,
     idpOidcConfig,
     IdpOidcConfig,
@@ -38,6 +39,16 @@ export async function storeIdpRefreshToken(
     idpId: number,
     tokens: arctic.OAuth2Tokens
 ): Promise<void> {
+    const [existingIdp] = await db
+        .select({ sessionRevalidation: idp.sessionRevalidation })
+        .from(idp)
+        .where(eq(idp.idpId, idpId))
+        .limit(1);
+
+    if (!existingIdp?.sessionRevalidation) {
+        return;
+    }
+
     if (!tokens.hasRefreshToken()) {
         logger.debug("IdP returned no refresh token", { idpId });
         return;
@@ -54,6 +65,10 @@ export async function storeIdpRefreshToken(
         });
         await trx.insert(sessionIdpGrants).values({ sessionId, grantId });
     });
+}
+
+export async function clearIdpSessionGrants(idpId: number): Promise<void> {
+    await db.delete(idpGrants).where(eq(idpGrants.idpId, idpId));
 }
 
 export async function revalidateIdpSession(
