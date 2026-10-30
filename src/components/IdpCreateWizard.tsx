@@ -30,7 +30,7 @@ import { StrategySelect } from "@app/components/StrategySelect";
 import IdpSessionRevalidationDescription from "@app/components/IdpSessionRevalidationDescription";
 import { SwitchInput } from "@app/components/SwitchInput";
 import { Badge } from "@app/components/ui/badge";
-import { ensureOfflineAccessScope } from "@app/lib/idp/ensureOfflineAccessScope";
+import { scopesForSessionRevalidation } from "@app/lib/idp/ensureOfflineAccessScope";
 import { useTranslations } from "next-intl";
 
 type CreateIdpFormValues = {
@@ -114,7 +114,10 @@ export function IdpCreateWizard({
     const handleSubmit = (data: CreateIdpFormValues) => {
         const payload = { ...data };
         if (payload.sessionRevalidation) {
-            payload.scopes = ensureOfflineAccessScope(payload.scopes);
+            payload.scopes = scopesForSessionRevalidation(
+                payload.scopes,
+                "oidc"
+            );
         }
         onSubmit(payload);
     };
@@ -177,7 +180,9 @@ export function IdpCreateWizard({
                                     <SwitchInput
                                         id="session-revalidation-toggle"
                                         label={t("idpSessionRevalidation")}
-                                        checked={form.watch("sessionRevalidation")}
+                                        checked={form.watch(
+                                            "sessionRevalidation"
+                                        )}
                                         onCheckedChange={(checked) => {
                                             form.setValue(
                                                 "sessionRevalidation",
@@ -189,8 +194,9 @@ export function IdpCreateWizard({
                                                     "openid profile email";
                                                 form.setValue(
                                                     "scopes",
-                                                    ensureOfflineAccessScope(
-                                                        current
+                                                    scopesForSessionRevalidation(
+                                                        current,
+                                                        "oidc"
                                                     )
                                                 );
                                             }

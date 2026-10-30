@@ -10,7 +10,7 @@ import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 import { idp, idpOidcConfig, idpOrg, orgs } from "@server/db";
 import { generateOidcRedirectUrl } from "@server/lib/idp/generateRedirectUrl";
-import { ensureOfflineAccessScope } from "@server/lib/idp/ensureOfflineAccessScope";
+import { scopesForSessionRevalidation } from "@server/lib/idp/ensureOfflineAccessScope";
 import { encrypt } from "@server/lib/crypto";
 import config from "@server/lib/config";
 
@@ -109,7 +109,7 @@ export async function createOidcIdp(
         }
 
         if (sessionRevalidation) {
-            scopes = ensureOfflineAccessScope(scopes);
+            scopes = scopesForSessionRevalidation(scopes, variant);
         }
 
         const key = config.getRawConfig().server.secret!;

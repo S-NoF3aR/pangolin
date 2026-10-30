@@ -27,7 +27,7 @@ import { encrypt } from "@server/lib/crypto";
 import config from "@server/lib/config";
 import { isSubscribed } from "#private/lib/isSubscribed";
 import { tierMatrix } from "@server/lib/billing/tierMatrix";
-import { ensureOfflineAccessScope } from "@server/lib/idp/ensureOfflineAccessScope";
+import { scopesForSessionRevalidation } from "@server/lib/idp/ensureOfflineAccessScope";
 import { clearIdpSessionGrants } from "@server/auth/sessions/idpRevalidation";
 import { build } from "@server/build";
 
@@ -145,16 +145,21 @@ export async function updateOrgOidcIdp(
             }
         }
 
-        if (sessionRevalidation === true && scopes) {
-            scopes = ensureOfflineAccessScope(scopes);
-        } else if (sessionRevalidation === true && !scopes) {
+        if (sessionRevalidation === true) {
             const [existingConfig] = await db
-                .select({ scopes: idpOidcConfig.scopes })
+                .select({
+                    scopes: idpOidcConfig.scopes,
+                    variant: idpOidcConfig.variant
+                })
                 .from(idpOidcConfig)
                 .where(eq(idpOidcConfig.idpId, idpId))
                 .limit(1);
-            if (existingConfig) {
-                scopes = ensureOfflineAccessScope(existingConfig.scopes);
+            const baseScopes = scopes ?? existingConfig?.scopes;
+            if (baseScopes) {
+                scopes = scopesForSessionRevalidation(
+                    baseScopes,
+                    existingConfig?.variant
+                );
             }
         }
 

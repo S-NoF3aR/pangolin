@@ -43,7 +43,7 @@ import {
 import CopyToClipboard from "@app/components/CopyToClipboard";
 import IdpTypeBadge from "@app/components/IdpTypeBadge";
 import IdpIdentifierChangeDialog from "@app/components/IdpIdentifierChangeDialog";
-import { ensureOfflineAccessScope } from "@app/lib/idp/ensureOfflineAccessScope";
+import { scopesForSessionRevalidation } from "@app/lib/idp/ensureOfflineAccessScope";
 import { useTranslations } from "next-intl";
 
 export default function GeneralPage() {
@@ -241,7 +241,7 @@ export default function GeneralPage() {
                 const oidcData = data as OidcFormValues;
                 let scopes = oidcData.scopes;
                 if (data.sessionRevalidation) {
-                    scopes = ensureOfflineAccessScope(scopes);
+                    scopes = scopesForSessionRevalidation(scopes, "oidc");
                 }
                 payload = {
                     ...payload,
@@ -258,7 +258,7 @@ export default function GeneralPage() {
                 const tokenUrl = `https://login.microsoftonline.com/${azureData.tenantId}/oauth2/v2.0/token`;
                 let scopes = "openid profile email";
                 if (data.sessionRevalidation) {
-                    scopes = ensureOfflineAccessScope(scopes);
+                    scopes = scopesForSessionRevalidation(scopes, "azure");
                 }
                 payload = {
                     ...payload,
@@ -270,10 +270,7 @@ export default function GeneralPage() {
                     scopes
                 };
             } else if (variant === "google") {
-                let scopes = "openid profile email";
-                if (data.sessionRevalidation) {
-                    scopes = ensureOfflineAccessScope(scopes);
-                }
+                // Google refresh tokens use access_type=offline, not offline_access
                 payload = {
                     ...payload,
                     authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
@@ -281,7 +278,7 @@ export default function GeneralPage() {
                     identifierPath: "email",
                     emailPath: "email",
                     namePath: "name",
-                    scopes
+                    scopes: "openid profile email"
                 };
             }
 
@@ -439,8 +436,9 @@ export default function GeneralPage() {
                                                         "openid profile email";
                                                     form.setValue(
                                                         "scopes",
-                                                        ensureOfflineAccessScope(
-                                                            current
+                                                        scopesForSessionRevalidation(
+                                                            current,
+                                                            "oidc"
                                                         )
                                                     );
                                                 }

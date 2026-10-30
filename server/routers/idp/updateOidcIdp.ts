@@ -12,7 +12,7 @@ import { idp, idpOidcConfig } from "@server/db";
 import { eq } from "drizzle-orm";
 import { encrypt } from "@server/lib/crypto";
 import config from "@server/lib/config";
-import { ensureOfflineAccessScope } from "@server/lib/idp/ensureOfflineAccessScope";
+import { scopesForSessionRevalidation } from "@server/lib/idp/ensureOfflineAccessScope";
 import { clearIdpSessionGrants } from "@server/auth/sessions/idpRevalidation";
 
 const paramsSchema = z
@@ -146,17 +146,22 @@ export async function updateOidcIdp(
             );
         }
 
-        if (sessionRevalidation === true && scopes) {
-            scopes = ensureOfflineAccessScope(scopes);
-        } else if (sessionRevalidation === true && !scopes) {
-            // keep existing scopes but ensure offline_access is present
+        if (sessionRevalidation === true) {
             const [existingConfig] = await db
-                .select({ scopes: idpOidcConfig.scopes })
+                .select({
+                    scopes: idpOidcConfig.scopes,
+                    variant: idpOidcConfig.variant
+                })
                 .from(idpOidcConfig)
                 .where(eq(idpOidcConfig.idpId, idpId))
                 .limit(1);
-            if (existingConfig) {
-                scopes = ensureOfflineAccessScope(existingConfig.scopes);
+            const effectiveVariant = variant ?? existingConfig?.variant;
+            const baseScopes = scopes ?? existingConfig?.scopes;
+            if (baseScopes) {
+                scopes = scopesForSessionRevalidation(
+                    baseScopes,
+                    effectiveVariant
+                );
             }
         }
 

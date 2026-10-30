@@ -27,7 +27,7 @@ import config from "@server/lib/config";
 import { CreateOrgIdpResponse } from "@server/routers/orgIdp/types";
 import { isSubscribed } from "#private/lib/isSubscribed";
 import { tierMatrix } from "@server/lib/billing/tierMatrix";
-import { ensureOfflineAccessScope } from "@server/lib/idp/ensureOfflineAccessScope";
+import { scopesForSessionRevalidation } from "@server/lib/idp/ensureOfflineAccessScope";
 import { build } from "@server/build";
 
 const paramsSchema = z.strictObject({ orgId: z.string().nonempty() });
@@ -126,7 +126,11 @@ export async function createOrgOidcIdp(
             tags
         } = parsedBody.data;
 
-        let { autoProvision, scopes, sessionRevalidation = false } = parsedBody.data;
+        let {
+            autoProvision,
+            scopes,
+            sessionRevalidation = false
+        } = parsedBody.data;
 
         if (build == "saas") {
             // this is not paywalled with a ee license because this whole endpoint is restricted
@@ -140,7 +144,7 @@ export async function createOrgOidcIdp(
         }
 
         if (sessionRevalidation) {
-            scopes = ensureOfflineAccessScope(scopes);
+            scopes = scopesForSessionRevalidation(scopes, variant);
         }
 
         const key = config.getRawConfig().server.secret!;

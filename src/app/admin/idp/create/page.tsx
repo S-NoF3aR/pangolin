@@ -31,7 +31,7 @@ import { usePaidStatus } from "@app/hooks/usePaidStatus";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { toast } from "@app/hooks/useToast";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
-import { ensureOfflineAccessScope } from "@app/lib/idp/ensureOfflineAccessScope";
+import { scopesForSessionRevalidation } from "@app/lib/idp/ensureOfflineAccessScope";
 import { applyOidcIdpProviderType } from "@app/lib/idp/oidcIdpProviderDefaults";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tierMatrix } from "@server/lib/billing/tierMatrix";
@@ -120,7 +120,7 @@ export default function Page() {
 
             let scopes = data.scopes || "openid profile email";
             if (data.sessionRevalidation) {
-                scopes = ensureOfflineAccessScope(scopes);
+                scopes = scopesForSessionRevalidation(scopes, data.type);
             }
 
             const payload = {
@@ -249,8 +249,11 @@ export default function Page() {
                                                             "openid profile email";
                                                         form.setValue(
                                                             "scopes",
-                                                            ensureOfflineAccessScope(
-                                                                current
+                                                            scopesForSessionRevalidation(
+                                                                current,
+                                                                form.getValues(
+                                                                    "type"
+                                                                )
                                                             )
                                                         );
                                                     }
