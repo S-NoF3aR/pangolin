@@ -101,7 +101,7 @@ export function IdpCreateWizard({
             identifierPath: "sub",
             namePath: "name",
             emailPath: "email",
-            scopes: "openid profile email",
+            scopes: "openid profile email offline_access",
             autoProvision: false,
             ...defaultValues
         }

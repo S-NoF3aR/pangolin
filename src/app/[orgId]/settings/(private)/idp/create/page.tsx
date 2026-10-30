@@ -109,7 +109,7 @@ export default function Page() {
             identifierPath: "sub",
             namePath: "name",
             emailPath: "email",
-            scopes: "openid profile email",
+            scopes: "openid profile email offline_access",
             tenantId: "",
             autoProvision: false,
             roleMapping: null,
@@ -122,9 +122,9 @@ export default function Page() {
     useEffect(() => {
         async function fetchRoles() {
             const res = await api
-                .get<
-                    AxiosResponse<ListRolesResponse>
-                >(`/org/${params.orgId}/roles`)
+                .get<AxiosResponse<ListRolesResponse>>(
+                    `/org/${params.orgId}/roles`
+                )
                 .catch((e) => {
                     console.error(e);
                     toast({

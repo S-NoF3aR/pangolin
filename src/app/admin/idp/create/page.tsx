@@ -85,7 +85,7 @@ export default function Page() {
             identifierPath: "sub",
             namePath: "name",
             emailPath: "email",
-            scopes: "openid profile email",
+            scopes: "openid profile email offline_access",
             tenantId: "",
             autoProvision: false
         }
@@ -217,7 +217,6 @@ export default function Page() {
                                                 </FormItem>
                                             )}
                                         />
-
                                     </form>
                                 </Form>
                             </SettingsSectionForm>
@@ -243,7 +242,9 @@ export default function Page() {
                                 onCheckedChange={(checked) => {
                                     form.setValue("autoProvision", checked);
                                 }}
-                                description={t("idpAutoProvisionConfigureAfterCreate")}
+                                description={t(
+                                    "idpAutoProvisionConfigureAfterCreate"
+                                )}
                             />
                         </div>
                     </SettingsSectionBody>

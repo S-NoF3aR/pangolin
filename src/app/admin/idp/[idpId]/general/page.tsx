@@ -100,9 +100,7 @@ export default function GeneralPage() {
     type GoogleFormValues = z.infer<typeof GoogleFormSchema>;
     type AzureFormValues = z.infer<typeof AzureFormSchema>;
     type GeneralFormValues =
-        | OidcFormValues
-        | GoogleFormValues
-        | AzureFormValues;
+        OidcFormValues | GoogleFormValues | AzureFormValues;
 
     const getFormSchema = () => {
         switch (variant) {
@@ -126,7 +124,7 @@ export default function GeneralPage() {
             identifierPath: "sub",
             emailPath: "email",
             namePath: "name",
-            scopes: "openid profile email",
+            scopes: "openid profile email offline_access",
             autoProvision: true,
             tenantId: ""
         }
@@ -144,9 +142,7 @@ export default function GeneralPage() {
                     const data = res.data.data;
                     const idpVariant =
                         (data.idpOidcConfig?.variant as
-                            | "oidc"
-                            | "google"
-                            | "azure") || "oidc";
+                            "oidc" | "google" | "azure") || "oidc";
                     setVariant(idpVariant);
                     setOriginalIdentifierPath(
                         data.idpOidcConfig?.identifierPath ?? "sub"

@@ -139,9 +139,7 @@ export default function GeneralPage() {
     type GoogleFormValues = z.infer<typeof GoogleFormSchema>;
     type AzureFormValues = z.infer<typeof AzureFormSchema>;
     type GeneralFormValues =
-        | OidcFormValues
-        | GoogleFormValues
-        | AzureFormValues;
+        OidcFormValues | GoogleFormValues | AzureFormValues;
 
     // Get the appropriate schema based on variant
     const getFormSchema = () => {
@@ -166,7 +164,7 @@ export default function GeneralPage() {
             identifierPath: "sub",
             emailPath: "email",
             namePath: "name",
-            scopes: "openid profile email",
+            scopes: "openid profile email offline_access",
             autoProvision: true,
             roleMapping: null,
             roleId: null,
