@@ -11,6 +11,7 @@ import {
 } from "@server/db";
 import config from "@server/lib/config";
 import { decrypt, encrypt } from "@server/lib/crypto";
+import { lockManager } from "#dynamic/lib/lock";
 import logger from "@server/logger";
 import { encodeBase32LowerCaseNoPadding, encodeBase64 } from "@oslojs/encoding";
 import * as arctic from "arctic";
@@ -24,8 +25,6 @@ const RETRY_INTERVAL_MS = Math.min(1000 * 60, REVALIDATION_INTERVAL_MS);
 const TOKEN_REQUEST_TIMEOUT_MS = 1000 * 10;
 
 const LEASE_MS = 1000 * 60;
-
-const inFlight = new Map<string, Promise<boolean>>();
 
 function randomId(): string {
     return encodeBase32LowerCaseNoPadding(
@@ -97,15 +96,16 @@ export async function inheritIdpGrant(
     approvingSessionId: string,
     deviceSessionId: string
 ): Promise<boolean> {
-    // primary: a lagging replica could miss the grant link
-    const [approving] = await primaryDb
-        .select({ grantId: sessionIdpGrants.grantId })
-        .from(sessions)
-        .leftJoin(
-            sessionIdpGrants,
-            eq(sessionIdpGrants.sessionId, sessions.sessionId)
-        )
-        .where(eq(sessions.sessionId, approvingSessionId));
+    const [approving] = await safeRead((d) =>
+        d
+            .select({ grantId: sessionIdpGrants.grantId })
+            .from(sessions)
+            .leftJoin(
+                sessionIdpGrants,
+                eq(sessionIdpGrants.sessionId, sessions.sessionId)
+            )
+            .where(eq(sessions.sessionId, approvingSessionId))
+    );
 
     if (!approving) {
         return false;
@@ -127,17 +127,34 @@ export async function inheritIdpGrant(
     return true;
 }
 
-function revalidateGrant(grantId: string): Promise<boolean> {
-    const pending = inFlight.get(grantId);
-    if (pending) {
-        return pending;
+async function revalidateGrant(grantId: string): Promise<boolean> {
+    const lockKey = `idp-grant-revalidate:${grantId}`;
+    const token = await lockManager.acquireLockWithRetry(
+        lockKey,
+        TOKEN_REQUEST_TIMEOUT_MS + LEASE_MS,
+        20,
+        250
+    );
+
+    if (!token) {
+        // Another node is still revalidating after our wait. Stay valid
+        // unless the grant was already revoked.
+        const [current] = await primaryDb
+            .select({ revokedAt: idpGrants.revokedAt })
+            .from(idpGrants)
+            .where(eq(idpGrants.grantId, grantId));
+        if (current && !current.revokedAt) {
+            return true;
+        }
+        await endGrantSessions(grantId);
+        return false;
     }
 
-    const check = revalidate(grantId).finally(() => {
-        inFlight.delete(grantId);
-    });
-    inFlight.set(grantId, check);
-    return check;
+    try {
+        return await revalidate(grantId);
+    } finally {
+        await lockManager.releaseLock(lockKey, token);
+    }
 }
 
 async function revalidate(grantId: string): Promise<boolean> {
